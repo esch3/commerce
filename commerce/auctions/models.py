@@ -8,6 +8,8 @@ class User(AbstractUser):
 class AuctionListing(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name="listings")
     title = models.CharField(max_length=50, blank=True)
+    description = models.TextField(max_length=200, blank=True)
+    photo = models.ImageField(upload_to='auctions/listings')
     price = models.DecimalField(max_digits=7, decimal_places=2, default=0)
     date = models.DateTimeField(auto_now_add=True, null=True)
 
