@@ -4,7 +4,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 from django import forms
-from .models import User, AuctionListing, Bid, Comment
+from .models import User, AuctionListing, Bid, Comment, Watchlist
 import datetime
 
 
@@ -109,7 +109,20 @@ def create(request):
 
 def display_listing(request, id):
     listing = AuctionListing.objects.get(pk=id)
+    watchlist = Watchlist.objects.filter(user_id=request.user).filter(listing_id=id)
+    if request.method == "POST":
+        if (Watchlist.objects.filter(user_id=request.user) and
+                Watchlist.objects.filter(listing_id=listing.id)):
+            Watchlist.objects.filter(user_id=request.user).filter(listing_id=listing.id).delete()
+        else:
+            watch_listing = Watchlist(
+                user_id = request.user,
+                listing_id = listing
+            ) 
+            watch_listing.save()
+        
     return render(request, "auctions/listing.html", {
-        "listing": listing
+        "listing": listing, 
+        "watchlist": watchlist
     })
 

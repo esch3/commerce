@@ -12,6 +12,12 @@ body {
 }
 
 .listing-img {
-    height: 20%;
+    height: 100%;
     width: 50%;
+}
+
+.overlay {
+    position: absolute;
+    top: 0;
+    right: 0;
 }

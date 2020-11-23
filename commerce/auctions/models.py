@@ -25,3 +25,7 @@ class Comment(models.Model):
     listing_id = models.ForeignKey(AuctionListing, on_delete=models.CASCADE, default=1, related_name="listing_comments")
     date = models.DateTimeField(auto_now_add=True, null=True)
     comment = models.TextField(max_length=200, blank=True)
+
+class Watchlist(models.Model):
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    listing_id = models.ForeignKey(AuctionListing, on_delete=models.CASCADE)
