@@ -9,24 +9,17 @@
     <div class="container">
         <div class="row justify-content-center">
     {% for listing in listings %}
+    <a class="img-link" href="{% url 'display_listing' listing.id %}">
         <div class="card text-center" style="width: 18rem; margin: 20px;">
             <img class="card-img-top" style="max-height:25%px;" src="{{ listing.photo }}" alt="coffee mug">
             <div class="card-body">
                 <h4 class="card-title">{{ listing.title }}</h4>
-                <p class="card-text">Description: {{ listing.description }}</p>
-                
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item"><h3>Price: ${{ listing.price }}</h3></li>
-                    <li class="list-group-item">Category: {{ listing.category }}</li>
-                    <li class="list-group-item">Sold by: {{ listing.user_id }}</li>
-                </ul>
-                
             </div>
             <div class="card-footer">
-                <input type="text" style="margin-bottom: 10px;" class="form-control" placeholder="{{ listing.price }}">
-                <a href="#" class="btn btn-primary" style="width: 50%;">Bid</a>
+                    <h3>${{ listing.price }}</h3>
             </div>
         </div>
+        </a>
     {% endfor %}
     </div>
     </div>
