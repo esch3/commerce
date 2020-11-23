@@ -28,9 +28,11 @@ class NewListingForm(forms.ModelForm):
         }
         
 
-
 def index(request):
-    return render(request, "auctions/index.html")
+    listings = AuctionListing.objects.all()
+    return render(request, "auctions/index.html", {
+        'listings': listings
+    })
 
 def login_view(request):
     if request.method == "POST":
@@ -104,3 +106,4 @@ def create(request):
     return render(request, "auctions/new_listing.html", {
         'new_listing_form': new_listing_form
     })
+
