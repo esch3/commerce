@@ -8,6 +8,20 @@ from .models import User, AuctionListing, Bid, Comment, Watchlist
 import datetime
 
 
+class BidForm(forms.ModelForm):
+    
+    class Meta:
+        model = Bid
+        fields = [
+            'user_id',
+            'listing_id',
+            'price'
+        ]
+
+        widgets = {
+            'price': forms.TextInput(attrs={'class': 'form-control'})
+        }
+
 class NewListingForm(forms.ModelForm):
     class Meta:
         model = AuctionListing
@@ -108,6 +122,11 @@ def create(request):
     })
 
 def display_listing(request, id):
+    if request.user.id is None:
+        return render(request, "auctions/error.html", {
+            "message": f"Please register or log in to view item details."
+        })
+
     listing = AuctionListing.objects.get(pk=id)
     watchlist = Watchlist.objects.filter(user_id=request.user).filter(listing_id=id)
     if request.method == "POST":
@@ -120,9 +139,40 @@ def display_listing(request, id):
                 listing_id = listing
             ) 
             watch_listing.save()
-        
+
+    bid_form = BidForm()
     return render(request, "auctions/listing.html", {
         "listing": listing, 
-        "watchlist": watchlist
+        "watchlist": watchlist,
+        "bid_form": bid_form
     })
+
+def bid(request, id):
+    if request.method == "POST":
+        form = BidForm(request.POST)
+        if form.is_valid():
+            price = float(AuctionListing.objects.get(
+                id=form.cleaned_data["listing_id"].id).price)
+            if Bid.objects.all() is not None:
+                max_bid = float(max([bid.price for bid in Bid.objects.filter(
+                listing_id=id)]))
+            if (form.cleaned_data["price"] < price or 
+                form.cleaned_data["price"] < max_bid):
+                return render(request, "auctions/error.html", {
+                    "message": f"Bid too low. Go higher."
+                })
+
+            bid = Bid(
+                user_id = form.cleaned_data["user_id"],
+                listing_id = form.cleaned_data["listing_id"],
+                price = form.cleaned_data["price"]
+            )
+            bid.save()
+        else:
+            return render(request, "auctions/error.html", {
+                "message": f"Please enter valid bid."
+            })
+    return render(request, "auctions/confirmation.html", {
+                "message": f"Your bid has been entered. You will be notified in the event of an offer. Thank you."
+            })
 
