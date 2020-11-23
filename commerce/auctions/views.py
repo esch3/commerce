@@ -3,13 +3,36 @@ from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
+from django import forms
+from .models import User, AuctionListing, Bid, Comment
+import datetime
 
-from .models import User
 
+class NewListingForm(forms.ModelForm):
+    class Meta:
+        model = AuctionListing
+        fields = [
+            'title', 
+            'description',
+            'photo',
+            'price',
+            'category'
+            ]
+        
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control'}),
+            'photo': forms.URLInput(attrs={'class': 'form-control'}),
+            'price': forms.TextInput(attrs={'class': 'form-control'}),
+            'category': forms.TextInput(attrs={'class': 'form-control'})
+        }
+        
 
 def index(request):
-    return render(request, "auctions/index.html")
-
+    listings = AuctionListing.objects.all()
+    return render(request, "auctions/index.html", {
+        'listings': listings
+    })
 
 def login_view(request):
     if request.method == "POST":
@@ -61,3 +84,26 @@ def register(request):
         return HttpResponseRedirect(reverse("index"))
     else:
         return render(request, "auctions/register.html")
+
+def create(request):
+    if request.method == "POST":
+        form = NewListingForm(request.POST)
+        if form.is_valid():
+            new_listing = AuctionListing(
+                user_id = request.user,
+                title = form.cleaned_data["title"],
+                description = form.cleaned_data["description"],
+                photo = form.cleaned_data["photo"],
+                price = form.cleaned_data["price"],
+                date = datetime.datetime.now(), 
+                category = form.cleaned_data["category"]
+            )
+            new_listing.save()
+        else:
+            return HttpResponse('invalid input')
+        return HttpResponseRedirect(reverse("index"))
+    new_listing_form = NewListingForm()
+    return render(request, "auctions/new_listing.html", {
+        'new_listing_form': new_listing_form
+    })
+
