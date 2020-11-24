@@ -1,0 +1,14 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+{% for listing in listings %}
+<form action="{% url 'delete' listing.id %}" method="POST">
+    {% csrf_token %}
+    <a href="{% url 'display_listing' listing.id %}">{{ listing.title }}
+        <span><img style="width:100px; height:100px;"src="{{ listing.photo }}"></span>
+    </a>${{ listing.price }} 
+    <span><button type="submit" class="btn btn-danger">Remove from watchlist</button></span>
+    <hr/>
+</form>
+{% endfor %}
+{% endblock %}
