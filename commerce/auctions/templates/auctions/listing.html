@@ -1,0 +1,129 @@
+{% extends 'auctions/layout.html' %}
+
+{% block body %}
+
+{% if listing.highest_bidder.username == user.username %}
+<h2>Congratulations!! {{ listing.highest_bidder }}</h2>
+<h3>You win the {{ listing.title }} for ${{ listing.price }}</h3>
+{% endif %}
+
+
+<!--|stringformat:"s"-->
+{% if listing.user_id.username  == user.username %}
+<h1> You are the seller.</h1>
+    {% if high_bid %}
+    {% if not listing.is_active %}
+    <h3>Sold to {{ listing.highest_bidder }} for ${{ listing.price }}</h3>
+    {% else %}
+    <h2>Here is the highest bidder:</h2>
+        {% for bidder in high_bid %}
+            <h3>{{ bidder.user_id }} at ${{ bidder.price }}</h3>
+        {% endfor %}
+    {% endif %}
+    <form action="{% url 'close' listing.id %}" method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="highest_bidder" value="{{ high_bid_user }}">
+        <input type="hidden" name="is_active" value="{{ listing.is_active }}">
+        {% if listing.is_active %}
+        <button type="submit" class="btn btn-success">Close bid</button>
+        {% endif %}
+    </form>
+    {% endif %}
+    <h1 class="text-center">{{ listing.title }}</h1>
+    
+    <ul class="list-group">
+        <li class="list-group-item text-center">
+            <div style="position: relative;">
+                <img class="listing-img" src="{{ listing.photo }}" alt="coffee mug">
+                {% if watchlist %}
+                <div class="alert alert-info overlay" role="alert">
+                    Watching
+                </div>
+                {% endif %}
+            </div>
+        </li>
+        <li class="list-group-item text-center">
+            <h2>${{ listing.price }}</h2>
+        </li>
+        <li class="list-group-item">Description: {{ listing.description }}</li>
+        <li class="list-group-item">Category: {{ listing.category }}</li>
+    </ul>
+    <br />
+
+{% else %}
+
+{% if listing.highest_bidder.username != user.username %}
+    <form action="{% url 'display_listing' listing.id %}" method="POST">
+        {% csrf_token %}
+        {% if not watchlist %}
+        <button type="submit">Add to watchlist</button>
+        {% else %}
+        <button type="submit" disabled>Add to watchlist</button>
+        {% endif %}
+    </form>
+    {% else %}
+{% endif %}
+
+<h1 class="text-center">{{ listing.title }}</h1>
+
+<ul class="list-group">
+    <li class="list-group-item text-center">
+        <div style="position: relative;">
+            <img class="listing-img" src="{{ listing.photo }}" alt="coffee mug">
+             {% if watchlist %}
+            <div class="alert alert-info overlay" role="alert">
+                Watching
+            </div>
+            {% endif %}
+        </div>
+    </li>
+    <li class="list-group-item text-center"><h2>${{ listing.price }}</h2></li>
+    <li class="list-group-item">Description: {{ listing.description }}</li>
+    <li class="list-group-item">Category: {{ listing.category }}</li>
+    <li class="list-group-item">Sold by: {{ listing.user_id }}</li>
+</ul>
+<br/>
+<form class="container" action="{% url 'bid' listing.id %}" method="POST">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-6">
+            {{ bid_form.price }}
+        </div>
+        <div class="col-6">
+            {% if listing.is_active %}
+            <button class="btn btn-primary" style="width:100%" value="submit">Bid</button>
+            {% else %}
+            <button class="btn btn-primary" style="width:100%" disabled>Bid</button>
+            {% endif %}
+        </div>
+        <input type="hidden" name="user_id" value="{{ user.id }}">
+        <input type="hidden" name="listing_id" value="{{ listing.id }}">
+    </div>
+</form>
+{% endif %}
+<br/>
+<br/>
+{% if comments %}
+    {% for comment in comments %}
+    <div class="container" style="color: black;">
+        <h2>{{ comment.user_id.username }} says:</h2>
+        <p class="lead">{{ comment.comment }}<p>
+        <p class="text-right"><i><small>{{ comment.date }}</small></i></p>
+    </div>
+    <br/>
+    {% endfor %}
+{% endif %}
+<br/>
+<br/>
+    <form class="form-group" action="{% url 'comment' listing.id %}" method="POST">
+        {% csrf_token %}
+        <h1>Add comment</h1>
+        <h2>{{ user.username }} says...</h2>
+        {{ comment_form.comment }}
+        <br/>
+        <button type="submit" class="btn btn-primary">Add comment</button>
+        <input type="hidden" name="user_id" value="{{ user.id }}">
+        <input type="hidden" name="listing_id" value="{{ listing.id }}">
+    </form>
+
+{% endblock %}
