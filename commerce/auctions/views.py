@@ -6,6 +6,13 @@ from django.urls import reverse
 from django import forms
 from .models import User, AuctionListing, Bid, Comment, Watchlist
 import datetime
+from django.contrib.auth.decorators import login_required
+from django.db.models import Max
+
+
+class CloseBidForm(forms.Form):
+    is_active = forms.BooleanField()
+    listing_id = forms.IntegerField()
 
 
 class BidForm(forms.ModelForm):
@@ -36,7 +43,8 @@ class NewListingForm(forms.ModelForm):
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control'}),
-            'photo': forms.URLInput(attrs={'class': 'form-control'}),
+            'photo': forms.URLInput(attrs={'class': 'form-control',
+                'placeholder': f"Enter URL of photo"}),
             'price': forms.TextInput(attrs={'class': 'form-control'}),
             'category': forms.TextInput(attrs={'class': 'form-control'})
         }
@@ -99,6 +107,7 @@ def register(request):
     else:
         return render(request, "auctions/register.html")
 
+@login_required
 def create(request):
     if request.method == "POST":
         form = NewListingForm(request.POST)
@@ -139,35 +148,51 @@ def display_listing(request, id):
                 listing_id = listing
             ) 
             watch_listing.save()
-
+    # get highest bidder
+    if Bid.objects.filter(listing_id=id):
+        max_bid = Bid.objects.filter(listing_id=id).aggregate(Max('price'))['price__max']
+        high_bid = Bid.objects.filter(listing_id=id).filter(price=max_bid)
+        high_bid_user = high_bid[0].user_id.id
+    else:
+        high_bid = None
+        high_bid_user = None
     bid_form = BidForm()
     return render(request, "auctions/listing.html", {
         "listing": listing, 
         "watchlist": watchlist,
-        "bid_form": bid_form
+        "bid_form": bid_form,
+        "high_bid": high_bid,
+        "high_bid_user": high_bid_user
     })
 
+@login_required
 def bid(request, id):
     if request.method == "POST":
         form = BidForm(request.POST)
         if form.is_valid():
             price = float(AuctionListing.objects.get(
                 id=form.cleaned_data["listing_id"].id).price)
-            if Bid.objects.all() is not None:
+            if Bid.objects.filter(listing_id=id):
                 max_bid = float(max([bid.price for bid in Bid.objects.filter(
                 listing_id=id)]))
-            if (form.cleaned_data["price"] < price or 
-                form.cleaned_data["price"] < max_bid):
+            else:
+                max_bid = price
+            if (form.cleaned_data["price"] <= price or 
+                form.cleaned_data["price"] <= max_bid):
                 return render(request, "auctions/error.html", {
                     "message": f"Bid too low. Go higher."
                 })
-
+            # enter bid 
             bid = Bid(
                 user_id = form.cleaned_data["user_id"],
                 listing_id = form.cleaned_data["listing_id"],
                 price = form.cleaned_data["price"]
             )
             bid.save()
+            # update price on listing to reflect highest bid
+            listing = AuctionListing.objects.get(id=id)
+            listing.price = form.cleaned_data["price"]
+            listing.save()
         else:
             return render(request, "auctions/error.html", {
                 "message": f"Please enter valid bid."
@@ -176,3 +201,14 @@ def bid(request, id):
                 "message": f"Your bid has been entered. You will be notified in the event of an offer. Thank you."
             })
 
+def close(request, id):
+    if request.method == "POST":
+        listing = AuctionListing.objects.get(id=id)
+        user = User.objects.get(id=request.POST['highest_bidder'])
+        listing.is_active = False
+        listing.highest_bidder = user
+        listing.save()
+        return HttpResponseRedirect(reverse("display_listing", args=[id]))
+    return render(request, "auctions/error.html", {
+        "message": f"Something went wrong."
+    })

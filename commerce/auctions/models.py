@@ -13,7 +13,8 @@ class AuctionListing(models.Model):
     price = models.DecimalField(max_digits=7, decimal_places=2, default=0)
     date = models.DateTimeField(auto_now_add=True, null=True)
     category = models.CharField(max_length=20, blank=True)
-
+    highest_bidder = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    is_active = models.BooleanField(default=True)
 class Bid(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_bids")
     listing_id = models.ForeignKey(AuctionListing, on_delete=models.CASCADE, related_name="bids")

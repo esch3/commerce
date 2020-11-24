@@ -10,7 +10,9 @@ class AuctionListingAdmin(admin.ModelAdmin):
         "photo", 
         "price", 
         "date",
-        "category"
+        "category",
+        "highest_bidder",
+        "is_active"
     )
 
 # Register your models here.
