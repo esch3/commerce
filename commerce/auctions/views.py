@@ -5,14 +5,24 @@ from django.shortcuts import render
 from django.urls import reverse
 from django import forms
 from .models import User, AuctionListing, Bid, Comment, Watchlist
-import datetime
 from django.contrib.auth.decorators import login_required
 from django.db.models import Max
+from datetime import datetime
 
 
-class CloseBidForm(forms.Form):
-    is_active = forms.BooleanField()
-    listing_id = forms.IntegerField()
+class CommentForm(forms.ModelForm):
+
+    class Meta:
+        model = Comment
+        fields = [
+            'user_id',
+            'listing_id',
+            'comment'
+        ]
+
+        widgets = {
+            'comment': forms.Textarea(attrs={'class': 'form-control'})
+        }
 
 
 class BidForm(forms.ModelForm):
@@ -118,8 +128,9 @@ def create(request):
                 description = form.cleaned_data["description"],
                 photo = form.cleaned_data["photo"],
                 price = form.cleaned_data["price"],
-                date = datetime.datetime.now(), 
-                category = form.cleaned_data["category"]
+                date = datetime.now(), 
+                category = form.cleaned_data["category"],
+                
             )
             new_listing.save()
         else:
@@ -135,19 +146,23 @@ def display_listing(request, id):
         return render(request, "auctions/error.html", {
             "message": f"Please register or log in to view item details."
         })
-
-    listing = AuctionListing.objects.get(pk=id)
+    # get user_id and listing_id and see if listing is on user's watchlist
     watchlist = Watchlist.objects.filter(user_id=request.user).filter(listing_id=id)
+    # get listing for page
+    listing = AuctionListing.objects.get(pk=id)
     if request.method == "POST":
-        if (Watchlist.objects.filter(user_id=request.user) and
-                Watchlist.objects.filter(listing_id=listing.id)):
-            Watchlist.objects.filter(user_id=request.user).filter(listing_id=listing.id).delete()
-        else:
-            watch_listing = Watchlist(
+        # if item exists on user's watchlist, delete it
+        '''
+        if watchlist:
+            Watchlist.objects.filter(user_id=request.user.id).filter(
+                listing_id=listing.id).delete()
+        '''
+        watchlist_mod = Watchlist(
                 user_id = request.user,
                 listing_id = listing
             ) 
-            watch_listing.save()
+        watchlist_mod.save()
+
     # get highest bidder
     if Bid.objects.filter(listing_id=id):
         max_bid = Bid.objects.filter(listing_id=id).aggregate(Max('price'))['price__max']
@@ -157,12 +172,18 @@ def display_listing(request, id):
         high_bid = None
         high_bid_user = None
     bid_form = BidForm()
+
+    comments = Comment.objects.filter(listing_id=id)
+    comment_form = CommentForm()
+    
     return render(request, "auctions/listing.html", {
         "listing": listing, 
         "watchlist": watchlist,
         "bid_form": bid_form,
         "high_bid": high_bid,
-        "high_bid_user": high_bid_user
+        "high_bid_user": high_bid_user,
+        "comments": comments, 
+        "comment_form": comment_form
     })
 
 @login_required
@@ -212,3 +233,40 @@ def close(request, id):
     return render(request, "auctions/error.html", {
         "message": f"Something went wrong."
     })
+
+def comment(request, id):
+    if request.method == "POST":
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = Comment(
+                user_id = form.cleaned_data['user_id'],
+                listing_id = form.cleaned_data['listing_id'],
+                comment = form.cleaned_data['comment'],
+                date = datetime.now()
+            )
+            comment.save()
+            return HttpResponseRedirect(reverse("display_listing", args=[id]))
+    else:
+        return render(request, "auctions/error.html", {
+            "message": f"Invalid input."
+        })
+    
+def watchlist(request, uid):
+    watchlist = Watchlist.objects.filter(user_id=uid)
+    listing_ids = []
+    listings = []
+    for e in list(watchlist):
+        listing_ids.append(e.listing_id.id)
+    for id in listing_ids:
+        listings.append(AuctionListing.objects.get(id=id))
+    return render(request, "auctions/watchlist.html", {
+        "listings": listings
+    })
+    
+def delete(request, id):
+    listing = AuctionListing.objects.get(pk=id)
+    if request.method == "POST":
+        Watchlist.objects.filter(
+            user_id=request.user).filter(listing_id=listing.id).delete()
+    return HttpResponseRedirect(reverse("watchlist", args=[request.user.id]))
+
