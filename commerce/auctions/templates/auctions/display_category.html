@@ -1,0 +1,23 @@
+{% extends 'auctions/layout.html' %}
+
+{% block body %}
+<div class="container">
+    <div class="row justify-content-center">
+        {% for listing in listings %}
+        {% if listing.is_active  %}
+        <a class="img-link" href="{% url 'display_listing' listing.id %}">
+            <div class="card text-center" style="width: 18rem; margin: 20px;">
+                <img class="card-img-top" style="max-height:25%px;" src="{{ listing.photo }}" alt="coffee mug">
+                <div class="card-body">
+                    <h4 class="card-title">{{ listing.title }}</h4>
+                </div>
+                <div class="card-footer">
+                    <h3>${{ listing.price }}</h3>
+                </div>
+            </div>
+        </a>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

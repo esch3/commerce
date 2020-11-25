@@ -40,6 +40,22 @@ class BidForm(forms.ModelForm):
         }
 
 class NewListingForm(forms.ModelForm):
+    CATEGORIES = (
+        ('WPN', 'Weapons'),
+        ('GRN', 'Greens'),
+        ('TEC', 'Technology'),
+        ('AFT', 'Artifact'),
+        ('OTR', 'Other')
+    )
+
+    category = forms.ChoiceField(
+        choices=CATEGORIES,
+        widget=forms.Select(
+            attrs={
+                'class': 'form-control',
+                'style': 'color: red;'
+            }
+        ))
     class Meta:
         model = AuctionListing
         fields = [
@@ -53,10 +69,13 @@ class NewListingForm(forms.ModelForm):
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control'}),
-            'photo': forms.URLInput(attrs={'class': 'form-control',
-                'placeholder': f"Enter URL of photo"}),
-            'price': forms.TextInput(attrs={'class': 'form-control'}),
-            'category': forms.TextInput(attrs={'class': 'form-control'})
+            'photo': forms.URLInput(
+                attrs={
+                    'class': 'form-control',
+                    'placeholder': f"Enter URL of photo"
+                    }
+                ),
+            'price': forms.TextInput(attrs={'class': 'form-control'})            
         }
         
 
@@ -270,3 +289,20 @@ def delete(request, id):
             user_id=request.user).filter(listing_id=listing.id).delete()
     return HttpResponseRedirect(reverse("watchlist", args=[request.user.id]))
 
+def category(request):
+    CATEGORIES = (
+        ('WPN', 'Weapons'),
+        ('GRN', 'Greens'),
+        ('TEC', 'Technology'),
+        ('AFT', 'Artifact'),
+        ('OTR', 'Other')
+    )
+    return render(request, "auctions/categories.html", {
+        'categories': CATEGORIES
+    })
+
+def display_category(request, code):
+    listings = AuctionListing.objects.filter(category=code) or None
+    return render(request, 'auctions/display_category.html', {
+        'listings': listings
+    })
