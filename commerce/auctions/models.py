@@ -21,10 +21,9 @@ class AuctionListing(models.Model):
     date = models.DateTimeField(auto_now_add=True, null=True)
     category = models.CharField(
         max_length=3, 
-        blank=True,
         choices=CATEGORIES
         )
-    highest_bidder = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    highest_bidder = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
     is_active = models.BooleanField(default=True)
 class Bid(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_bids")

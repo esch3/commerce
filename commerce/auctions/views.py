@@ -289,3 +289,20 @@ def delete(request, id):
             user_id=request.user).filter(listing_id=listing.id).delete()
     return HttpResponseRedirect(reverse("watchlist", args=[request.user.id]))
 
+def category(request):
+    CATEGORIES = (
+        ('WPN', 'Weapons'),
+        ('GRN', 'Greens'),
+        ('TEC', 'Technology'),
+        ('AFT', 'Artifact'),
+        ('OTR', 'Other')
+    )
+    return render(request, "auctions/categories.html", {
+        'categories': CATEGORIES
+    })
+
+def display_category(request, code):
+    listings = AuctionListing.objects.filter(category=code) or None
+    return render(request, 'auctions/display_category.html', {
+        'listings': listings
+    })
